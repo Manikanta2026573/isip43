@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Object Detection</title>
+    <style>
+        #image {
+            max-width: 100%;
+            height: auto;
+        }
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .container {
+            position: relative;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <h1>Upload Image for Object Detection</h1>
+    <input type="file" accept="image/*" id="upload">
+    <div class="container">
+        <img id="image" />
+        <canvas id="canvas"></canvas>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <script>
+        const upload = document.getElementById('upload');
+        const image = document.getElementById('image');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        upload.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    image.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        image.onload = async () => {
+            canvas.width = image.width;
+            canvas.height = image.height;
+            const model = await cocoSsd.load();
+            const predictions = await model.detect(image);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(image, 0, 0);
+
+            predictions.forEach(prediction => {
+                ctx.beginPath();
+                ctx.rect(...prediction.bbox);
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = 'red';
+                ctx.fillStyle = 'red';
+                ctx.stroke();
+                ctx.fillText(
+                    `${prediction.class} (${Math.round(prediction.score * 100)}%)`,
+                    prediction.bbox[0],
+                    prediction.bbox[1] > 10 ? prediction.bbox[1] - 5 : 10
+                );
+                ctx.closePath();
+            });
+        };
+    </script>
+</body>
+</html>
